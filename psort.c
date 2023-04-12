@@ -69,6 +69,24 @@ void merge(two_chunk_info* two_chunk_info)
 void sort(chunk_info *info)
 {
     // printf("si: %d\nei: %d\n", info->si, info->ei);
+    int si = info->si;
+    int ei = info->ei;
+    if (si == ei)
+    {
+        return;
+    }
+    chunk_info left;
+    chunk_info right;
+    left.si = si;
+    left.ei = (ei+si)/2;
+    right.si = (ei+si)/2+1;
+    right.ei = ei;
+    sort(&left);
+    sort(&right);
+    two_chunk_info two_chunks;
+    two_chunks.chunk1 = left;
+    two_chunks.chunk2 = right;
+    merge(&two_chunks);
 }
 
 
@@ -98,11 +116,12 @@ int main(int argc, char **argv)
 
     const int record_num = in_stat.st_size / record_size;
     records = (record*) malloc(sizeof(record) * in_stat.st_size/record_size);
-    record* record_addr = (record*) in_mem;
+    void* record_addr = in_mem;
     for (int i = 0; i < record_num; i++)
     {
         records[i].key = * (int*) record_addr;
-        records[i].addr = (void*) record_addr;
+        records[i].addr = record_addr;
+        record_addr += 100;
     }
 
     int start_i = 0;
@@ -113,7 +132,7 @@ int main(int argc, char **argv)
     {
         chunk_infos[i].si = start_i;
         chunk_infos[i].ei = i == num_threads-1? record_num - 1 : start_i + chunk_size - 1;
-        printf("main: si: %d, ei: %d\n", chunk_infos[i].si, chunk_infos[i].ei);
+        // printf("main: si: %d, ei: %d\n", chunk_infos[i].si, chunk_infos[i].ei);
         pthread_create(&ps[i], NULL, (void *(*)(void *))sort, &chunk_infos[i]);
         start_i += chunk_size;
     }
