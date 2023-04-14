@@ -26,7 +26,7 @@ typedef struct two_chunk_info
 
 typedef struct record
 {
-    uint32_t key;
+    int32_t key;
     void* addr;
 } record;
 
