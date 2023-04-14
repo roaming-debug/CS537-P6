@@ -147,10 +147,23 @@ int main(int argc, char **argv)
     gettimeofday(&start, NULL);
 
     int start_i = 0;
-    int chunk_size = record_num / num_threads;
+    if(record_num == 0)
+    {
+        printf("record_num is 0\n");
+        exit(EXIT_FAILURE);
+    }
+    int chunk_size = record_num / num_threads != 0? record_num / num_threads : 1;
     chunk_info* chunk_infos = (chunk_info*) malloc(sizeof(chunk_info) * num_threads);
-    int chunk_num = num_threads;
-    for (int i = 0; i < num_threads; i++)
+    int chunk_num;
+    if (record_num >= num_threads)
+    {
+        chunk_num = num_threads;
+    }
+    else
+    {
+        chunk_num = record_num;
+    }
+    for (int i = 0; i < num_threads && start_i < record_num; i++)
     {
         chunk_infos[i].si = start_i;
         chunk_infos[i].ei = i == num_threads-1? record_num - 1 : start_i + chunk_size - 1;
