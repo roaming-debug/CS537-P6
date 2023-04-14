@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     free(two_chunk_infos);
 
     gettimeofday(&end, NULL);
-    float total_time = (end.tv_usec - start.tv_usec) / 1000000.0;
+    float total_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;;
     printf("Number of threads: %d, Runtime: %f seconds\n", num_threads, total_time);
     
     void* curr_out_mem = out_mem;
