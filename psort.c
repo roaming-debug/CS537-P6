@@ -95,6 +95,11 @@ const int record_size = 100;
 
 int main(int argc, char **argv)
 {
+    if (argc != 4) {
+        printf("Wrong number of arguments\n");
+        exit(EXIT_FAILURE);
+    }
+
     char *input_name = argv[1];
     char* output_name = argv[2];
     int num_threads = atoi(argv[3]);
@@ -102,13 +107,26 @@ int main(int argc, char **argv)
     pthread_t *ps = malloc(sizeof(pthread_t) * num_threads);
     
     int in_fd = open(input_name, O_RDONLY);
+    if (in_fd == -1) {
+        printf("Error opening input file\n");
+        exit(EXIT_FAILURE);
+    }
     struct stat in_stat;
-    struct stat out_stat;
     fstat(in_fd, &in_stat);
-    int out_fd = open(output_name, O_CREAT|O_RDWR, in_stat.st_mode);
-    fstat(out_fd, &out_stat);
 
-    ftruncate(out_fd, in_stat.st_size);
+    int out_fd = open(output_name, O_CREAT | O_RDWR, in_stat.st_mode); // in_stat.st_mode
+    if (out_fd == -1) {
+        printf("Error opening output file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (ftruncate(out_fd, in_stat.st_size) == -1) {
+        printf("Error truncating output file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    struct stat out_stat;
+    fstat(out_fd, &out_stat);
     
     void *in_mem = mmap(NULL, in_stat.st_size, PROT_READ, MAP_SHARED_VALIDATE, in_fd, 0);
     void *out_mem = mmap(NULL, out_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED_VALIDATE, out_fd, 0);
@@ -176,8 +194,8 @@ int main(int argc, char **argv)
     free(two_chunk_infos);
 
     gettimeofday(&end, NULL);
-    float total_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
-    printf("Number of threads: %d, Runtime: %f\n", num_threads, total_time);
+    float total_time = (end.tv_usec - start.tv_usec) / 1000000.0;
+    printf("Number of threads: %d, Runtime: %f seconds\n", num_threads, total_time);
     
     void* curr_out_mem = out_mem;
     for (int i = 0; i < record_num; i++)
@@ -189,9 +207,12 @@ int main(int argc, char **argv)
     fsync(out_fd);
     free(records);
     free(ps);
-    munmap(out_mem, out_stat.st_size);
-    munmap(in_mem, in_stat.st_size);
+
+    if (munmap(in_mem, in_stat.st_size) == -1 || munmap(out_mem, out_stat.st_size) == -1)
+        exit(EXIT_FAILURE);
+
     close(in_fd);
     close(out_fd);
+
     return 0;
 }
